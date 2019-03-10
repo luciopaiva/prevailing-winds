@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prevailing winds</title>
+
+    <style>
+        html, body {
+            background-color: gray;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            color: #688cad;
+            font-family: sans-serif;
+        }
+        body {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+        }
+        h1 {
+            z-index: 2;
+            position: absolute;
+            padding: 0;
+            margin: 0;
+            top: 20px;
+            left: 20px;
+            text-shadow: 1px 1px 1px #633aab;
+        }
+        .container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+    </style>
+
+    <script src="three.min.js" defer></script>
+    <script src="OrbitControls.js" defer></script>
+    <script src="index.js"></script>
+</head>
+<body>
+
+<h1>Prevailing winds</h1>
+
+<div class="container"></div>
+
+</body>
+</html>
