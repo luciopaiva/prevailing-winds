@@ -9,9 +9,8 @@ class App {
         this.scene = new THREE.Scene();
         this.aspect = window.innerWidth / window.innerHeight;
         this.camera = new THREE.PerspectiveCamera(45, this.aspect, 0.1, 1500);
-        this.orbitControls = new THREE.OrbitControls(this.camera);
-        this.spotlight = new THREE.SpotLight(0x888888, 1, 0, 10, 2);
-        this.spotlight.position.set(2, 0, 2);
+        this.spotlight = new THREE.SpotLight(0xaaaaaa, 1, 0, Math.PI / 2, 0, 2);
+        this.spotlight.position.set(2, 0, 0);
 
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         document.querySelector(".container").appendChild(this.renderer.domElement);
@@ -22,9 +21,14 @@ class App {
 
         this.camera.position.set(0, 0, 2.5);
         this.camera.lookAt(this.planet.position);
+        this.camera.up.set(0, 1, 0);
+        this.orbitControls = new THREE.OrbitControls(this.camera);
+
+        const ambientLight = new THREE.AmbientLight(0x101010);
 
         this.scene.add(this.camera);
         this.scene.add(this.spotlight);
+        this.scene.add(ambientLight);
         this.scene.add(this.planet);
         this.scene.add(this.winds);
 
@@ -60,22 +64,32 @@ class App {
         const lonAngleStep = TAU / 12;
         const zoneStep = Math.PI / 6;  // 6 zones
 
+        // for each longitude cut
         for (let lon = 0; lon < TAU; lon += lonAngleStep) {
+            // for each wind cell
             for (let zone = 0; zone < Math.PI; zone += zoneStep) {
                 const latStart = zone + zoneStep * 0.05;
                 const latEnd = zone + zoneStep - zoneStep * 0.05;
-                const latStep = (latEnd - latStart) / 3;
+                const LAT_STEPS = 8;
+                const latStep = (latEnd - latStart) / LAT_STEPS;
 
-                const curve = new THREE.CatmullRomCurve3([
-                    (new THREE.Vector3()).setFromSphericalCoords(altitude1, latStart, lon),
-                    (new THREE.Vector3()).setFromSphericalCoords(altitude1, latStart + latStep, lon),
-                    (new THREE.Vector3()).setFromSphericalCoords(altitude1, latStart + latStep * 2, lon),
-                    (new THREE.Vector3()).setFromSphericalCoords(altitude1, latEnd, lon),
-                    (new THREE.Vector3()).setFromSphericalCoords(altitude2, latEnd, lon),
-                    (new THREE.Vector3()).setFromSphericalCoords(altitude2, latEnd - latStep, lon),
-                    (new THREE.Vector3()).setFromSphericalCoords(altitude2, latEnd - latStep * 2, lon),
-                    (new THREE.Vector3()).setFromSphericalCoords(altitude2, latStart, lon),
-                ], true);
+                const curvePoints = [];
+                // points just above the surface
+                for (let i = 0; i < LAT_STEPS + 1; i++) {
+                    const lat = latStart + latStep * i;
+                    curvePoints.push((new THREE.Vector3()).setFromSphericalCoords(altitude1, lat, lon));
+                }
+
+                // ToDo do something to soften curve at the extremes
+                // curvePoints.push((new THREE.Vector3()).setFromSphericalCoords((altitude1 + altitude2) / 2, latEnd + latStep, lon));
+
+                // points at the top of the troposphere
+                for (let i = 0; i < LAT_STEPS + 1; i++) {
+                    const lat = latEnd - latStep * i;
+                    curvePoints.push((new THREE.Vector3()).setFromSphericalCoords(altitude2, lat, lon));
+                }
+
+                const curve = new THREE.CatmullRomCurve3(curvePoints, true);
 
                 const points = curve.getPoints(800);
                 const geometry = (new THREE.BufferGeometry()).setFromPoints(points);
@@ -91,6 +105,7 @@ class App {
     loadPlanetTextures() {
         const mapLoader = new THREE.TextureLoader();
         mapLoader.load("textures/map.jpg", texture => {
+            this.planet.scale.y = -1;  // ToDo had to invert the Earth texture to appear right - find out why and fix it
             this.planet.material.map = texture;
             this.planet.material.needsUpdate = true;
         });
@@ -110,8 +125,8 @@ class App {
         const size = PLANET_RADIUS;
         const geometry = new THREE.SphereGeometry(size, PLANET_RESOLUTION, PLANET_RESOLUTION);
         const material = new THREE.MeshPhongMaterial({
-            bumpScale: 0.05,
-            specular: new THREE.Color("black"),
+            bumpScale: 0.01,
+            specular: new THREE.Color("gray"),
             shininess: 0,
         });
         return new THREE.Mesh(geometry, material);
